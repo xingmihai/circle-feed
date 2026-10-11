@@ -55,11 +55,19 @@ https://xingmihai.github.io/circle-feed/circle.json
 
 | 配置 | 说明 |
 |---|---|
+| `EXCLUDED_SITES` | 不参与订阅的站点（按友链名称匹配），适合备案页、导航站这类没有 RSS 的友链 |
 | `EXTRA_SOURCES` | 额外订阅源，适合收录没加进友链的站点 |
+| `COMMON_FEED_PATHS` | 自动探测时依次尝试的路径 |
 | `FRIENDS_CONFIG_URLS` | 主仓库友链配置文件地址，按顺序尝试 |
 | `FETCH_OPTIONS` | 超时、每站条数、总数上限 |
 
 改完 `src/config.ts` 直接生效，脚本会自动读取；配置文件缺失时脚本会降级使用内置默认值。
+
+### 某个站点一直抓不到怎么办
+
+先判断它是不是真的有 RSS：备案展示页、网址导航、工具站这类**本来就没有文章订阅源**，填进 `EXCLUDED_SITES` 即可，不必反复探测。
+
+确实有 RSS 但探测不到的，在 `EXTRA_SOURCES` 里手动指定 `feed` 地址最稳妥。
 
 抓取频率在 `.github/workflows/update.yml` 的 `cron` 里改，默认每 6 小时一次。
 

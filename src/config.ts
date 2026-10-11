@@ -1,13 +1,24 @@
 // 圈子数据源配置
 //
 // 说明：本文件会被 scripts/fetch-circle.mjs 以文本方式解析，
-// 因此请保持 `export const EXTRA_SOURCES = [...]` 的写法与字段格式，
+// 因此请保持各 `export const xxx = [...]` 的写法与字段格式，
 // 注释以 // 开头（整行注释会被自动忽略）
+
+// ── 不参与订阅的站点 ────────────────────────────────────────────
+// 按友链中的站点名称（title）匹配，填在这里的站点不会被抓取
+// 适合备案展示页、网址导航、工具站这类根本没有文章 RSS 的友链
+// 不填的话它们每次都会尝试探测，结果总是失败并出现在 failures 里
+export const EXCLUDED_SITES = [
+	// 萌ICP备案展示站，不是博客，没有文章订阅源
+	"萌国萌站广场",
+	// 网址导航/跳转站，不是博客，没有文章订阅源
+	"WebTeleporter",
+];
 
 // ── 额外订阅源 ──────────────────────────────────────────────────
 // 主仓库 XMHAI 的友链会自动作为订阅源，无需在这里重复添加
 // 这里只填想订阅、但没加进友链的站点
-// feed 留空会自动探测 /rss.xml、/feed、/atom.xml 等常见路径
+// feed 留空会自动探测 COMMON_FEED_PATHS 中的路径
 export const EXTRA_SOURCES = [
 	// {
 	//   name: "示例博客",
@@ -17,10 +28,34 @@ export const EXTRA_SOURCES = [
 	// },
 ];
 
+// ── 自动探测时依次尝试的订阅源路径 ────────────────────────────────
+// 站点未手动指定 feed 地址时，按顺序尝试这些路径
+export const COMMON_FEED_PATHS = [
+	// 通用
+	"/rss.xml",
+	"/atom.xml",
+	"/feed",
+	"/feed.xml",
+	"/index.xml",
+	"/rss/",
+	"/feed/rss.xml",
+	// Typecho 常用：带斜杠的 /feed/ 与不带斜杠的 /feed 并不等价
+	"/feed/",
+	"/feed/index.xml",
+	"/rss.php",
+	"/index.php/feed/",
+	"/index.php/feed",
+	// WordPress 常用
+	"/?feed=rss2",
+	"/feed?type=rss2",
+	// Hugo / Astro 等静态站
+	"/blog/index.xml",
+	"/posts/index.xml",
+];
+
 // ── 抓取参数 ────────────────────────────────────────────────────
-// 以下数值如需调整，请同步修改 scripts/fetch-circle.mjs 中 main() 里的常量
 export const FETCH_OPTIONS = {
-	timeout: 10000, // 单个订阅源抓取超时（毫秒）
+	timeout: 15000, // 单个订阅源抓取超时（毫秒）；小站响应慢可适当调大
 	limitPerSource: 5, // 每个站点最多取几篇
 	totalLimit: 40, // 总共最多展示几篇
 };

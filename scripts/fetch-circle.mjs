@@ -16,8 +16,10 @@ const OUTPUT = resolve(ROOT, "public/circle.json");
 const UA =
 	"Mozilla/5.0 (compatible; CircleFeed/1.0; +https://github.com/xingmihai/circle-feed)";
 
-// 常见的订阅源路径，用于自动探测
-const COMMON_FEED_PATHS = [
+// 兜底的常见订阅源路径，用于自动探测
+// 正常情况下以 src/config.ts 中的 COMMON_FEED_PATHS 为准
+const DEFAULT_FEED_PATHS = [
+	// 通用
 	"/rss.xml",
 	"/atom.xml",
 	"/feed",
@@ -25,6 +27,18 @@ const COMMON_FEED_PATHS = [
 	"/index.xml",
 	"/rss/",
 	"/feed/rss.xml",
+	// Typecho 常用（带斜杠结尾，与 /feed 并不等价）
+	"/feed/",
+	"/feed/index.xml",
+	"/rss.php",
+	"/index.php/feed/",
+	"/index.php/feed",
+	// WordPress 常用
+	"/?feed=rss2",
+	"/feed?type=rss2",
+	// Hugo / Astro 等静态站
+	"/blog/index.xml",
+	"/posts/index.xml",
 ];
 
 // 兜底默认值：src/config.ts 读取失败时使用
@@ -49,6 +63,27 @@ function stripCommentLines(source) {
 		.split("\n")
 		.filter((line) => !/^\s*\/\//.test(line))
 		.join("\n");
+}
+
+// 截取 `export const xxx = {...}` 对象内部的内容
+// FETCH_OPTIONS 是对象而非数组，不能复用 sliceArrayBody
+function sliceObjectBody(source, anchor) {
+	const start = source.indexOf(anchor);
+	if (start < 0) return "";
+	const matched = /[=:]\s*\{/.exec(source.slice(start));
+	if (!matched) return "";
+	const open = start + matched.index + matched[0].length - 1;
+
+	let depth = 0;
+	for (let i = open; i < source.length; i++) {
+		const ch = source[i];
+		if (ch === "{") depth++;
+		else if (ch === "}") {
+			depth--;
+			if (depth === 0) return source.slice(open + 1, i);
+		}
+	}
+	return "";
 }
 
 // 截取 `export const friendsConfig = [...]` 数组内部的内容
@@ -140,10 +175,18 @@ function loadLocalConfig() {
 		: [];
 
 	const friendUrls = sliceStringArray(source, "export const FRIENDS_CONFIG_URLS");
-	const optionsBlock = sliceArrayBody(source, "export const FETCH_OPTIONS");
+	const optionsBlock = sliceObjectBody(source, "export const FETCH_OPTIONS");
+
+	// 不参与订阅的站点（按名称匹配）：例如备案展示页、导航站这类本来就没有 RSS 的友链
+	const excluded = sliceStringArray(source, "export const EXCLUDED_SITES");
+
+	// 自动探测时依次尝试的路径
+	const feedPaths = sliceStringArray(source, "export const COMMON_FEED_PATHS");
 
 	return {
 		extraSources,
+		excluded,
+		feedPaths: feedPaths.length ? feedPaths : DEFAULT_FEED_PATHS,
 		friendUrls: friendUrls.length ? friendUrls : DEFAULT_FRIENDS_CONFIG_URLS,
 		options: {
 			timeout: pickNumber(optionsBlock, "timeout", DEFAULT_OPTIONS.timeout),
@@ -291,9 +334,9 @@ async function fetchText(url, timeout) {
 }
 
 // 自动探测站点常见的订阅源路径
-async function discoverFeed(site, timeout) {
+async function discoverFeed(site, timeout, paths) {
 	const base = site.replace(/\/+$/, "");
-	for (const path of COMMON_FEED_PATHS) {
+	for (const path of paths) {
 		const url = base + path;
 		const { text, error } = await fetchText(url, timeout);
 		if (error) continue;
@@ -304,7 +347,7 @@ async function discoverFeed(site, timeout) {
 }
 
 // 抓取单个订阅源：优先用配置地址，失败再自动探测
-async function fetchSource(source, timeout, limit) {
+async function fetchSource(source, timeout, limit, paths) {
 	const candidates = source.feed ? [source.feed] : [];
 	let lastError = source.feed ? "抓取失败" : "未配置订阅源地址";
 
@@ -321,7 +364,11 @@ async function fetchSource(source, timeout, limit) {
 		lastError = "未解析到文章";
 	}
 
-	const discovered = await discoverFeed(source.site, Math.min(timeout, 5000));
+	const discovered = await discoverFeed(
+		source.site,
+		Math.min(timeout, 5000),
+		paths,
+	);
 	if (discovered) {
 		const { text, error } = await fetchText(discovered, timeout);
 		if (!error) {
@@ -357,10 +404,15 @@ async function main() {
 		console.error(`[circle] 警告：${configError}`);
 	}
 
-	// 合并去重，额外配置优先
+	// 合并去重，额外配置优先；并按名称剔除不参与订阅的站点
 	const merged = [];
 	for (const source of friendSources) {
-		if (!extraSources.some((s) => s.name === source.name)) merged.push(source);
+		if (extraSources.some((s) => s.name === source.name)) continue;
+		if (config.excluded.includes(source.name)) {
+			console.error(`[circle] ⊘ ${source.name} — 已配置为不订阅，跳过`);
+			continue;
+		}
+		merged.push(source);
 	}
 	merged.push(...extraSources);
 
@@ -368,7 +420,12 @@ async function main() {
 
 	const results = await Promise.all(
 		merged.map(async (source) => {
-			const result = await fetchSource(source, timeout, limitPerSource);
+			const result = await fetchSource(
+				source,
+				timeout,
+				limitPerSource,
+				config.feedPaths,
+			);
 			console.error(
 				result.error
 					? `[circle] ✗ ${source.name} — ${result.error}`
