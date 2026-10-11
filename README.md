@@ -80,7 +80,7 @@ GitHub 会自动签发 HTTPS 证书，生效可能需要几分钟到几小时。
 
 | 配置 | 说明 |
 |---|---|
-| `EXCLUDED_SITES` | 不参与订阅的站点（按友链名称匹配），默认为空即全部抓取 |
+| `EXCLUDED_SITES` | 不参与订阅的站点（按友链 `siteurl` 匹配，忽略末尾斜杠），为空即全部抓取 |
 | `EXTRA_SOURCES` | 额外订阅源，适合收录没加进友链的站点 |
 | `COMMON_FEED_PATHS` | 自动探测时依次尝试的路径 |
 | `FRIENDS_CONFIG_URLS` | 主仓库友链配置文件地址，按顺序尝试 |
@@ -94,7 +94,9 @@ GitHub 会自动签发 HTTPS 证书，生效可能需要几分钟到几小时。
 
 若确实有 RSS 却探测不到，在 `EXTRA_SOURCES` 里手动指定 `feed` 地址最稳妥。
 
-如果希望某些站点不再出现在失败列表里，把它们的名称填进 `EXCLUDED_SITES`。
+如果希望某些站点不再出现在抓取或失败列表里，把它们的 `siteurl` 填进 `EXCLUDED_SITES`。
+
+聚合站、导航站、备案展示页这类站点也建议排除：它们虽然有订阅源，但里面的文章并非友链博主本人所写，混进圈子会盖过真正的个人博客。
 
 抓取频率在 `.github/workflows/update.yml` 的 `cron` 里改，默认每 6 小时一次。
 

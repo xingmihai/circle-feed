@@ -404,11 +404,14 @@ async function main() {
 		console.error(`[circle] 警告：${configError}`);
 	}
 
-	// 合并去重，额外配置优先；并按名称剔除不参与订阅的站点
+	// 合并去重，额外配置优先；并按站点地址剔除不参与订阅的站点
+	// 比较前统一去掉末尾斜杠，避免因写法差异漏判
+	const normalize = (url) => String(url || "").replace(/\/+$/, "");
+	const excluded = config.excluded.map(normalize);
 	const merged = [];
 	for (const source of friendSources) {
 		if (extraSources.some((s) => s.name === source.name)) continue;
-		if (config.excluded.includes(source.name)) {
+		if (excluded.includes(normalize(source.site))) {
 			console.error(`[circle] ⊘ ${source.name} — 已配置为不订阅，跳过`);
 			continue;
 		}
