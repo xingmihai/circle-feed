@@ -47,7 +47,32 @@ https://xingmihai.github.io/circle-feed/circle.json
 ```
 
 > 地址规则：`https://<用户名>.github.io/<仓库名>/`，仓库名是 `circle-feed`。
-> 若绑定了自定义域名，把域名填进 **Pages → Custom domain** 即可。
+
+### 绑定自定义域名
+
+当前已绑定 `circle-feed.5al.top`，需要三处配合，缺一不可：
+
+1. **DNS**：在你的 DNS 服务商处添加一条 CNAME 记录
+
+   | 类型 | 名称 | 目标 |
+   |---|---|---|
+   | CNAME | `circle-feed` | `xingmihai.github.io` |
+
+2. **仓库文件** `public/CNAME`：内容只有一行域名
+
+   ```
+   circle-feed.5al.top
+   ```
+
+   > ⚠️ 容易踩的坑：在 Settings → Pages → Custom domain 里填域名时，
+   > GitHub 会在**仓库根目录**生成 CNAME，但本仓库只部署 `public/` 目录，
+   > 根目录下的 CNAME 不会进入部署产物，导致每次部署后自定义域名失效。
+   > 因此必须把 CNAME 放在 `public/` 下。
+
+3. **Settings → Pages → Custom domain** 填入 `circle-feed.5al.top` 并保存
+
+三处都就绪后，访问 `https://circle-feed.5al.top/circle.json` 验证。
+GitHub 会自动签发 HTTPS 证书，生效可能需要几分钟到几小时。
 
 ## 自定义
 

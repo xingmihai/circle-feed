@@ -91,6 +91,9 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      # 只上传 public/ 目录，其中 CNAME 文件用于保留自定义域名
+      # 注意：Settings 里填域名生成的 CNAME 在仓库根目录，不会进入部署产物，
+      #       因此必须放在 public/ 下，否则每次部署后自定义域名会失效
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
