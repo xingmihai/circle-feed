@@ -28,6 +28,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # 取完整历史，便于后续 rebase
+          fetch-depth: 0
+
+      # checkout 后立刻对齐远端最新，避免任务运行期间远端有新提交时基于旧快照生成
+      - name: Sync with remote
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -60,4 +69,19 @@ jobs:
           fi
 
           git commit -m "chore: 更新圈子数据 $(date '+%Y-%m-%d %H:%M')"
-          git push origin main
+
+          # 推送失败时（例如任务运行期间远端又有了新提交）自动同步并重试
+          for i in 1 2 3; do
+            if git push origin main; then
+              echo "推送成功"
+              exit 0
+            fi
+            echo "第 $i 次推送失败，同步远端后重试…"
+            git fetch origin main
+            # 冲突时保留本次生成的数据
+            git rebase -X theirs origin/main || git rebase --abort
+            sleep 5
+          done
+
+          echo "推送失败，请查看日志"
+          exit 1
