@@ -16,6 +16,7 @@ export const EXCLUDED_SITES = [
 	"https://icp.gov.moe/aboutus.php",
 	"https://www.boyouquan.com/",
 	"https://indi.blog/",
+	"https://bkh.jyblog.com/",
 ];
 
 // ── 额外订阅源 ──────────────────────────────────────────────────
