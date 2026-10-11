@@ -27,13 +27,19 @@ const COMMON_FEED_PATHS = [
 	"/feed/rss.xml",
 ];
 
-// 主仓库友链配置文件地址，按顺序尝试
-const FRIENDS_CONFIG_URLS = [
+// 兜底默认值：src/config.ts 读取失败时使用
+// 正常情况下以 src/config.ts 中的配置为准
+const DEFAULT_FRIENDS_CONFIG_URLS = [
 	// raw 无缓存，改友链后立即生效
 	"https://raw.githubusercontent.com/xingmihai/XMHAI/master/src/config/friendsConfig.ts",
 	// 备用：jsDelivr CDN
 	"https://cdn.jsdelivr.net/gh/xingmihai/XMHAI@master/src/config/friendsConfig.ts",
 ];
+const DEFAULT_OPTIONS = {
+	timeout: 10000,
+	limitPerSource: 5,
+	totalLimit: 40,
+};
 
 // ---------------------------------------------------------------- 配置解析
 
@@ -97,29 +103,67 @@ function pickBoolean(block, key, fallback = true) {
 	return matched ? matched[1] === "true" : fallback;
 }
 
-// 读取本地额外订阅源配置（src/config.ts 中的 EXTRA_SOURCES）
-function readExtraSources() {
+// 提取字符串数组的内容（如 FRIENDS_CONFIG_URLS）
+function sliceStringArray(source, anchor) {
+	const body = sliceArrayBody(source, anchor);
+	return (body.match(/"[^"]*"/g) || []).map((s) => s.slice(1, -1));
+}
+
+// 提取数字字段，取不到则用兜底值
+function pickNumber(source, key, fallback) {
+	const matched = new RegExp(`${key}\\s*:\\s*(\\d+)`, "i").exec(source);
+	return matched ? Number(matched[1]) : fallback;
+}
+
+// 读取本地配置（src/config.ts）：额外订阅源、主仓库地址、抓取参数
+// 读取失败时降级为默认值，保证脚本始终可运行
+function loadLocalConfig() {
 	let source;
 	try {
-		source = stripCommentLines(readFileSync(resolve(ROOT, "src/config.ts"), "utf-8"));
+		source = stripCommentLines(
+			readFileSync(resolve(ROOT, "src/config.ts"), "utf-8"),
+		);
 	} catch {
-		return [];
+		source = "";
 	}
-	const body = sliceArrayBody(source, "export const EXTRA_SOURCES");
-	return splitObjects(body)
-		.filter((block) => pickBoolean(block, "enabled", true))
-		.map((block) => ({
-			name: pickField(block, "name") || "",
-			site: pickField(block, "site") || "",
-			avatar: pickField(block, "avatar") || undefined,
-			feed: pickField(block, "feed") || undefined,
-		}))
-		.filter((item) => item.name && item.site);
+
+	const extraSources = sliceArrayBody(source, "export const EXTRA_SOURCES")
+		? splitObjects(sliceArrayBody(source, "export const EXTRA_SOURCES"))
+				.filter((block) => pickBoolean(block, "enabled", true))
+				.map((block) => ({
+					name: pickField(block, "name") || "",
+					site: pickField(block, "site") || "",
+					avatar: pickField(block, "avatar") || undefined,
+					feed: pickField(block, "feed") || undefined,
+				}))
+				.filter((item) => item.name && item.site)
+		: [];
+
+	const friendUrls = sliceStringArray(source, "export const FRIENDS_CONFIG_URLS");
+	const optionsBlock = sliceArrayBody(source, "export const FETCH_OPTIONS");
+
+	return {
+		extraSources,
+		friendUrls: friendUrls.length ? friendUrls : DEFAULT_FRIENDS_CONFIG_URLS,
+		options: {
+			timeout: pickNumber(optionsBlock, "timeout", DEFAULT_OPTIONS.timeout),
+			limitPerSource: pickNumber(
+				optionsBlock,
+				"limitPerSource",
+				DEFAULT_OPTIONS.limitPerSource,
+			),
+			totalLimit: pickNumber(
+				optionsBlock,
+				"totalLimit",
+				DEFAULT_OPTIONS.totalLimit,
+			),
+		},
+	};
 }
 
 // 从主仓库拉取友链配置并解析
-async function loadFriendSources(timeout) {
-	for (const url of FRIENDS_CONFIG_URLS) {
+async function loadFriendSources(timeout, urls) {
+	for (const url of urls) {
 		const controller = new AbortController();
 		const timer = setTimeout(() => controller.abort(), timeout);
 		try {
@@ -299,13 +343,15 @@ async function fetchSource(source, timeout, limit) {
 // ---------------------------------------------------------------- 主流程
 
 async function main() {
-	const timeout = 10000;
-	const limitPerSource = 5;
-	const totalLimit = 40;
+	// 配置全部来自 src/config.ts，读取失败时自动降级为默认值
+	const config = loadLocalConfig();
+	const { timeout, limitPerSource, totalLimit } = config.options;
+	const extraSources = config.extraSources;
 
-	const extraSources = readExtraSources();
-	const { sources: friendSources, error: configError } =
-		await loadFriendSources(timeout);
+	const { sources: friendSources, error: configError } = await loadFriendSources(
+		timeout,
+		config.friendUrls,
+	);
 
 	if (configError) {
 		console.error(`[circle] 警告：${configError}`);

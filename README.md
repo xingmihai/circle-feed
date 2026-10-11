@@ -57,7 +57,9 @@ https://xingmihai.github.io/circle-feed/circle.json
 |---|---|
 | `EXTRA_SOURCES` | 额外订阅源，适合收录没加进友链的站点 |
 | `FRIENDS_CONFIG_URLS` | 主仓库友链配置文件地址，按顺序尝试 |
-| `FETCH_OPTIONS` | 超时、每站条数、总数上限（改这里需同步改脚本内常量） |
+| `FETCH_OPTIONS` | 超时、每站条数、总数上限 |
+
+改完 `src/config.ts` 直接生效，脚本会自动读取；配置文件缺失时脚本会降级使用内置默认值。
 
 抓取频率在 `.github/workflows/update.yml` 的 `cron` 里改，默认每 6 小时一次。
 
