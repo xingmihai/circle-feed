@@ -1,7 +1,7 @@
-name: Update Circle Data
+name: Update and Deploy
 
-# 定时抓取朋友们的 RSS，生成 circle.json 并提交回仓库
-# Cloudflare Pages 检测到仓库变更后会自动部署，因此不需要任何 API Token
+# 抓取友链 RSS 生成 circle.json，并部署到 GitHub Pages
+# 部署产物只有 public/ 目录（即 circle.json），源码不会暴露
 on:
   schedule:
     # UTC 每 6 小时的第 23 分钟
@@ -17,6 +17,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: circle-data
@@ -25,11 +27,13 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # 取完整历史，便于后续 rebase
           fetch-depth: 0
 
       # checkout 后立刻对齐远端最新，避免任务运行期间远端有新提交时基于旧快照生成
@@ -55,14 +59,15 @@ jobs:
           echo "文章数：$(node -p "require('./public/circle.json').items.length")"
           echo "失败数：$(node -p "require('./public/circle.json').failures.length")"
 
-      - name: Commit and push
+      # 提交回仓库只是为了留一份数据历史，失败不影响部署
+      - name: Commit data
+        continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add public/circle.json
 
-          # 内容无变化时跳过提交，避免产生空提交、也避免触发无谓的部署
           if git diff --cached --quiet; then
             echo "数据无变化，跳过提交"
             exit 0
@@ -70,7 +75,7 @@ jobs:
 
           git commit -m "chore: 更新圈子数据 $(date '+%Y-%m-%d %H:%M')"
 
-          # 推送失败时（例如任务运行期间远端又有了新提交）自动同步并重试
+          # 推送失败时同步远端并重试，最多三次
           for i in 1 2 3; do
             if git push origin main; then
               echo "推送成功"
@@ -78,10 +83,19 @@ jobs:
             fi
             echo "第 $i 次推送失败，同步远端后重试…"
             git fetch origin main
-            # 冲突时保留本次生成的数据
             git rebase -X theirs origin/main || git rebase --abort
             sleep 5
           done
-
-          echo "推送失败，请查看日志"
           exit 1
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

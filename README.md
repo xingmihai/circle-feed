@@ -1,9 +1,9 @@
 # Circle Feed
 
-圈子数据源。部署在 Cloudflare Pages，对外只提供一个接口：
+圈子数据源。部署在 GitHub Pages，对外只提供一个接口：
 
 ```
-https://<你的域名>/circle.json
+https://<用户名>.github.io/circle-feed/circle.json
 ```
 
 博客读取它渲染「圈子」页面，**更新文章不需要重建博客**。
@@ -11,17 +11,18 @@ https://<你的域名>/circle.json
 ## 工作方式
 
 ```
-GitHub Actions 定时触发（每 6 小时 / 改配置 / 手动）
+GitHub Actions 触发（每 6 小时 / 改配置 / 手动）
       ↓
 从主仓库 XMHAI 拉取友链配置
       ↓
 并发抓取各站 RSS / Atom（未填地址则自动探测）
       ↓
-生成 public/circle.json 并提交回仓库
+生成 public/circle.json
       ↓
-Cloudflare Pages 检测到变更 → 自动部署
+├─ 提交回仓库（留一份数据历史，失败也不影响部署）
+└─ 部署到 GitHub Pages
       ↓
-博客运行时读取 /circle.json 渲染
+博客运行时读取 circle.json 渲染
 ```
 
 关键点：
@@ -29,30 +30,24 @@ Cloudflare Pages 检测到变更 → 自动部署
 - **抓取只发生在这个仓库**，与主博客完全独立，不会触发博客重建
 - 订阅源**自动从主仓库的友链配置拉取**，改友链自动同步，不用维护两份
 - 站点没填 RSS 地址时自动探测 `/rss.xml`、`/feed`、`/atom.xml` 等常见路径
-- 内容无变化时跳过提交，不产生空提交、不浪费部署额度
-- **不需要任何 API Token**——靠 Pages 的 Git 集成自动部署
+- 只部署 `public/` 目录，源码不会出现在 Pages 上
 
-## 部署到 Cloudflare Pages
+## 启用 GitHub Pages（只需做一次）
 
-1. Cloudflare Dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
-2. 选中本仓库，配置如下：
+1. 仓库 **Settings → Pages**
+2. **Source** 选 **GitHub Actions**（不是 "Deploy from a branch"）
+3. 保存
 
-| 项目 | 值 |
-|---|---|
-| Framework preset | `None` |
-| Build command | 留空 |
-| Build output directory | `public` |
+然后回到 **Actions → Update and Deploy → Run workflow** 手动跑一次。
 
-3. 保存并部署。然后回到 GitHub，手动触发一次 Actions（**Actions → Update Circle Data → Run workflow**）生成数据。
-
-4. 访问验证：
+跑完后访问验证：
 
 ```
-https://circle-feed.pages.dev/circle.json
+https://xingmihai.github.io/circle-feed/circle.json
 ```
 
-> ⚠️ 请在 Pages 设置里把 **Branch Preview 设为 None**（或只勾生产分支）。
-> 否则每次推送都可能触发构建，白白消耗每月 500 次的免费额度。
+> 地址规则：`https://<用户名>.github.io/<仓库名>/`，仓库名是 `circle-feed`。
+> 若绑定了自定义域名，把域名填进 **Pages → Custom domain** 即可。
 
 ## 自定义
 
@@ -65,6 +60,17 @@ https://circle-feed.pages.dev/circle.json
 | `FETCH_OPTIONS` | 超时、每站条数、总数上限（改这里需同步改脚本内常量） |
 
 抓取频率在 `.github/workflows/update.yml` 的 `cron` 里改，默认每 6 小时一次。
+
+## 关于跨域（CORS）
+
+博客从另一个域名读取本接口的 JSON，需要对方返回 CORS 头。GitHub Pages 通常会带上，但为保险起见，**建议博客端配置两个地址依次尝试**：
+
+```
+https://xingmihai.github.io/circle-feed/circle.json
+https://cdn.jsdelivr.net/gh/xingmihai/circle-feed@main/public/circle.json
+```
+
+第二条走 jsDelivr CDN，一定带 CORS 头（有约 12 小时缓存）。这也是"提交回仓库"这一步的价值——让 jsDelivr 也能读到最新数据。
 
 ## 返回格式
 
