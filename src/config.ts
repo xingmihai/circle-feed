@@ -15,6 +15,7 @@ export const EXCLUDED_SITES = [
 	"https://webteleporter.top/",
 	"https://icp.gov.moe/aboutus.php",
 	"https://www.boyouquan.com/",
+	"https://indi.blog/",
 ];
 
 // ── 额外订阅源 ──────────────────────────────────────────────────
