@@ -1,18 +1,20 @@
 {
-  "updatedAt": "2026-10-11T00:52:03.180Z",
+  "updatedAt": "2026-10-11T00:56:40.249Z",
   "sourceCount": 6,
   "sources": [
     {
       "name": "笑的博客",
       "site": "https://blog.xiaow.qzz.io",
       "avatar": "https://q1.qlogo.cn/g?b=qq&nk=548541786&s=100",
-      "ok": false
+      "feedUrl": "https://blog.xiaow.qzz.io/rss.xml",
+      "ok": true
     },
     {
       "name": "韩小韩博客",
       "site": "https://www.vvhan.com",
       "avatar": "https://q1.qlogo.cn/g?b=qq&nk=1655466387&s=100",
-      "ok": false
+      "feedUrl": "https://www.vvhan.com/rss.xml",
+      "ok": true
     },
     {
       "name": "萌国萌站广场",
@@ -30,39 +32,206 @@
       "name": "BlogsClub",
       "site": "https://www.blogsclub.org/",
       "avatar": "https://www.blogsclub.org/usr/themes/default/favicon.png",
-      "ok": false
+      "feedUrl": "https://www.blogsclub.org/feed",
+      "ok": true
     },
     {
       "name": "博友圈",
       "site": "https://www.boyouquan.com/",
       "avatar": "https://www.boyouquan.com/assets/favicon.ico",
-      "ok": false
+      "feedUrl": "https://www.boyouquan.com/feed.xml",
+      "ok": true
     }
   ],
-  "items": [],
+  "items": [
+    {
+      "title": "faryou的博客：国庆外培行记",
+      "link": "https://www.boyouquan.com/go?from=feed&amp;link=https%3A%2F%2Fblog.faryou.eu.org%2Flife-article-27.html",
+      "published": "Sat, 10 Oct 2026 14:57:00 GMT",
+      "timestamp": 1791644220000,
+      "sourceName": "博友圈",
+      "sourceAvatar": "https://www.boyouquan.com/assets/favicon.ico",
+      "sourceSite": "https://www.boyouquan.com/"
+    },
+    {
+      "title": "徐建伟：聊病",
+      "link": "https://www.boyouquan.com/go?from=feed&amp;link=http%3A%2F%2Fwww.xulog.cn%2Findex.php%3Fact%3Dpl%26id%3D1228",
+      "published": "Sat, 10 Oct 2026 14:50:47 GMT",
+      "timestamp": 1791643847000,
+      "sourceName": "博友圈",
+      "sourceAvatar": "https://www.boyouquan.com/assets/favicon.ico",
+      "sourceSite": "https://www.boyouquan.com/"
+    },
+    {
+      "title": "码农明明桑：特种兵杭州一日游",
+      "link": "https://www.boyouquan.com/go?from=feed&amp;link=https%3A%2F%2Fisming.me%2F2026-10-06-hangzhou%2F%3Futm_source%3Drss",
+      "published": "Sat, 10 Oct 2026 12:50:33 GMT",
+      "timestamp": 1791636633000,
+      "sourceName": "博友圈",
+      "sourceAvatar": "https://www.boyouquan.com/assets/favicon.ico",
+      "sourceSite": "https://www.boyouquan.com/"
+    },
+    {
+      "title": "MuXiaoChen&#x1f34a;：国庆北京行",
+      "link": "https://www.boyouquan.com/go?from=feed&amp;link=https%3A%2F%2Fmiraii.cn%2Fposts%2Fk3a37867%2F",
+      "published": "Sat, 10 Oct 2026 06:42:33 GMT",
+      "timestamp": 1791614553000,
+      "sourceName": "博友圈",
+      "sourceAvatar": "https://www.boyouquan.com/assets/favicon.ico",
+      "sourceSite": "https://www.boyouquan.com/"
+    },
+    {
+      "title": "瓦解的生活记事：十月近况",
+      "link": "https://www.boyouquan.com/go?from=feed&amp;link=https%3A%2F%2Fhin.cool%2Fposts%2Fbusyoct.html",
+      "published": "Sat, 10 Oct 2026 06:00:00 GMT",
+      "timestamp": 1791612000000,
+      "sourceName": "博友圈",
+      "sourceAvatar": "https://www.boyouquan.com/assets/favicon.ico",
+      "sourceSite": "https://www.boyouquan.com/"
+    },
+    {
+      "title": "猫尾巴纸箱？",
+      "link": "https://www.blogsclub.org/blog/937.html",
+      "published": "Fri, 09 Oct 2026 22:54:55 +0800",
+      "timestamp": 1791557695000,
+      "sourceName": "BlogsClub",
+      "sourceAvatar": "https://www.blogsclub.org/usr/themes/default/favicon.png",
+      "sourceSite": "https://www.blogsclub.org/"
+    },
+    {
+      "title": "涅槃博客",
+      "link": "https://www.blogsclub.org/blog/933.html",
+      "published": "Mon, 05 Oct 2026 17:27:21 +0800",
+      "timestamp": 1791192441000,
+      "sourceName": "BlogsClub",
+      "sourceAvatar": "https://www.blogsclub.org/usr/themes/default/favicon.png",
+      "sourceSite": "https://www.blogsclub.org/"
+    },
+    {
+      "title": "响石潭",
+      "link": "https://www.blogsclub.org/blog/931.html",
+      "published": "Mon, 05 Oct 2026 09:14:00 +0800",
+      "timestamp": 1791162840000,
+      "sourceName": "BlogsClub",
+      "sourceAvatar": "https://www.blogsclub.org/usr/themes/default/favicon.png",
+      "sourceSite": "https://www.blogsclub.org/"
+    },
+    {
+      "title": "鼠子Blog",
+      "link": "https://www.blogsclub.org/blog/930.html",
+      "published": "Sat, 03 Oct 2026 19:34:22 +0800",
+      "timestamp": 1791027262000,
+      "sourceName": "BlogsClub",
+      "sourceAvatar": "https://www.blogsclub.org/usr/themes/default/favicon.png",
+      "sourceSite": "https://www.blogsclub.org/"
+    },
+    {
+      "title": "云海札记",
+      "link": "https://www.blogsclub.org/blog/929.html",
+      "published": "Sat, 03 Oct 2026 00:10:27 +0800",
+      "timestamp": 1790957427000,
+      "sourceName": "BlogsClub",
+      "sourceAvatar": "https://www.blogsclub.org/usr/themes/default/favicon.png",
+      "sourceSite": "https://www.blogsclub.org/"
+    },
+    {
+      "title": "小飞机网盘直链解析 — Cloudflare Worker 一键跳过分享页直接下载",
+      "link": "https://blog.xiaow.qzz.io/article/fjp-direct-download/",
+      "published": "Tue, 11 Aug 2026 23:30:22 GMT",
+      "timestamp": 1786491022000,
+      "sourceName": "笑的博客",
+      "sourceAvatar": "https://q1.qlogo.cn/g?b=qq&nk=548541786&s=100",
+      "sourceSite": "https://blog.xiaow.qzz.io"
+    },
+    {
+      "title": "分享一个IP签名档/IP卡片源码",
+      "link": "https://blog.xiaow.qzz.io/article/ip-signature-card/",
+      "published": "Sun, 05 Jul 2026 01:06:35 GMT",
+      "timestamp": 1783213595000,
+      "sourceName": "笑的博客",
+      "sourceAvatar": "https://q1.qlogo.cn/g?b=qq&nk=548541786&s=100",
+      "sourceSite": "https://blog.xiaow.qzz.io"
+    },
+    {
+      "title": "弄了一个专为vh-astro博客设计的友链管理系统，把烦人操作全扔了",
+      "link": "https://blog.xiaow.qzz.io/article/friend-link-manager/",
+      "published": "Sun, 21 Jun 2026 14:59:40 GMT",
+      "timestamp": 1782053980000,
+      "sourceName": "笑的博客",
+      "sourceAvatar": "https://q1.qlogo.cn/g?b=qq&nk=548541786&s=100",
+      "sourceSite": "https://blog.xiaow.qzz.io"
+    },
+    {
+      "title": "我的网站被刷了 150G 流量——复盘与反思",
+      "link": "https://blog.xiaow.qzz.io/article/no-waf-traffic-attack/",
+      "published": "Fri, 05 Jun 2026 10:45:00 GMT",
+      "timestamp": 1780656300000,
+      "sourceName": "笑的博客",
+      "sourceAvatar": "https://q1.qlogo.cn/g?b=qq&nk=548541786&s=100",
+      "sourceSite": "https://blog.xiaow.qzz.io"
+    },
+    {
+      "title": "🦞 VH-Claw：便携式 OpenClaw 管理工具，零配置开箱即用",
+      "link": "https://www.vvhan.com/article/vh-claw-openclaw",
+      "published": "Sat, 11 Apr 2026 18:18:49 GMT",
+      "timestamp": 1775931529000,
+      "sourceName": "韩小韩博客",
+      "sourceAvatar": "https://q1.qlogo.cn/g?b=qq&nk=1655466387&s=100",
+      "sourceSite": "https://www.vvhan.com"
+    },
+    {
+      "title": "在termux安装blutter教程",
+      "link": "https://blog.xiaow.qzz.io/article/termux-install-blutter/",
+      "published": "Sat, 21 Mar 2026 15:50:12 GMT",
+      "timestamp": 1774108212000,
+      "sourceName": "笑的博客",
+      "sourceAvatar": "https://q1.qlogo.cn/g?b=qq&nk=548541786&s=100",
+      "sourceSite": "https://blog.xiaow.qzz.io"
+    },
+    {
+      "title": "你还在用真实邮箱注册网站？等等，你真的想清楚了吗？",
+      "link": "https://www.vvhan.com/article/tempmail100-email",
+      "published": "Tue, 24 Jun 2025 13:16:16 GMT",
+      "timestamp": 1750770976000,
+      "sourceName": "韩小韩博客",
+      "sourceAvatar": "https://q1.qlogo.cn/g?b=qq&nk=1655466387&s=100",
+      "sourceSite": "https://www.vvhan.com"
+    },
+    {
+      "title": "IPFS星际文件系统",
+      "link": "https://www.vvhan.com/article/ipfs-interplanetary-file-system",
+      "published": "Sun, 25 May 2025 16:16:16 GMT",
+      "timestamp": 1748189776000,
+      "sourceName": "韩小韩博客",
+      "sourceAvatar": "https://q1.qlogo.cn/g?b=qq&nk=1655466387&s=100",
+      "sourceSite": "https://www.vvhan.com"
+    },
+    {
+      "title": "最新二合一收款码 - 物理合并版",
+      "link": "https://www.vvhan.com/article/new-pay-qrcode",
+      "published": "Tue, 06 May 2025 16:16:16 GMT",
+      "timestamp": 1746548176000,
+      "sourceName": "韩小韩博客",
+      "sourceAvatar": "https://q1.qlogo.cn/g?b=qq&nk=1655466387&s=100",
+      "sourceSite": "https://www.vvhan.com"
+    },
+    {
+      "title": "从Hexo到Astro博客1分钟迁移指南",
+      "link": "https://www.vvhan.com/article/hexo-to-astro-1-minute-migration-guide",
+      "published": "Mon, 07 Apr 2025 17:20:46 GMT",
+      "timestamp": 1744046446000,
+      "sourceName": "韩小韩博客",
+      "sourceAvatar": "https://q1.qlogo.cn/g?b=qq&nk=1655466387&s=100",
+      "sourceSite": "https://www.vvhan.com"
+    }
+  ],
   "failures": [
-    {
-      "name": "笑的博客",
-      "error": "未探测到订阅源（可手动填写 feed 地址）"
-    },
-    {
-      "name": "韩小韩博客",
-      "error": "未探测到订阅源（可手动填写 feed 地址）"
-    },
     {
       "name": "萌国萌站广场",
       "error": "未探测到订阅源（可手动填写 feed 地址）"
     },
     {
       "name": "WebTeleporter",
-      "error": "未探测到订阅源（可手动填写 feed 地址）"
-    },
-    {
-      "name": "BlogsClub",
-      "error": "未探测到订阅源（可手动填写 feed 地址）"
-    },
-    {
-      "name": "博友圈",
       "error": "未探测到订阅源（可手动填写 feed 地址）"
     }
   ]
