@@ -1,6 +1,6 @@
 {
-  "updatedAt": "2026-10-11T01:17:39.795Z",
-  "sourceCount": 4,
+  "updatedAt": "2026-10-11T01:27:44.210Z",
+  "sourceCount": 6,
   "sources": [
     {
       "name": "笑的博客",
@@ -15,6 +15,18 @@
       "avatar": "https://q1.qlogo.cn/g?b=qq&nk=1655466387&s=100",
       "feedUrl": "https://www.vvhan.com/rss.xml",
       "ok": true
+    },
+    {
+      "name": "萌国萌站广场",
+      "site": "https://icp.gov.moe/aboutus.php",
+      "avatar": "https://icp.gov.moe/favicon.ico",
+      "ok": false
+    },
+    {
+      "name": "WebTeleporter",
+      "site": "https://webteleporter.top/",
+      "avatar": "https://webteleporter.top/favicon.ico",
+      "ok": false
     },
     {
       "name": "BlogsClub",
@@ -213,5 +225,14 @@
       "sourceSite": "https://www.vvhan.com"
     }
   ],
-  "failures": []
+  "failures": [
+    {
+      "name": "萌国萌站广场",
+      "error": "未探测到订阅源（可手动填写 feed 地址）"
+    },
+    {
+      "name": "WebTeleporter",
+      "error": "未探测到订阅源（可手动填写 feed 地址）"
+    }
+  ]
 }
