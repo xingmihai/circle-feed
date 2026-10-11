@@ -11,21 +11,26 @@ https://<你的域名>/circle.json
 ## 工作方式
 
 ```
-访客打开博客圈子页
+GitHub Actions 定时触发（每 6 小时 / 改配置 / 手动）
       ↓
-浏览器请求 /circle.json
+从主仓库 XMHAI 拉取友链配置
       ↓
-Cloudflare 边缘节点
-   ├─ 缓存命中 → 直接返回（毫秒级）
-   └─ 缓存未命中 → 抓取主仓库友链配置 → 并发抓取各站 RSS → 写入缓存
+并发抓取各站 RSS / Atom（未填地址则自动探测）
       ↓
-返回 JSON，博客渲染
+生成 public/circle.json 并提交回仓库
+      ↓
+Cloudflare Pages 检测到变更 → 自动部署
+      ↓
+博客运行时读取 /circle.json 渲染
 ```
 
-- 订阅源**自动从主仓库的友链配置拉取**，你改友链，这里自动同步，不用维护两份
-- 站点没填 RSS 地址时，会自动探测 `/rss.xml`、`/feed`、`/atom.xml` 等常见路径
-- 边缘缓存默认 1 小时，同一时间段内不会重复抓取，对友链站点友好
-- 已带 CORS 头，博客跨域读取没问题
+关键点：
+
+- **抓取只发生在这个仓库**，与主博客完全独立，不会触发博客重建
+- 订阅源**自动从主仓库的友链配置拉取**，改友链自动同步，不用维护两份
+- 站点没填 RSS 地址时自动探测 `/rss.xml`、`/feed`、`/atom.xml` 等常见路径
+- 内容无变化时跳过提交，不产生空提交、不浪费部署额度
+- **不需要任何 API Token**——靠 Pages 的 Git 集成自动部署
 
 ## 部署到 Cloudflare Pages
 
@@ -38,13 +43,15 @@ Cloudflare 边缘节点
 | Build command | 留空 |
 | Build output directory | `public` |
 
-3. 保存并部署。完成后访问：
+3. 保存并部署。然后回到 GitHub，手动触发一次 Actions（**Actions → Update Circle Data → Run workflow**）生成数据。
+
+4. 访问验证：
 
 ```
 https://circle-feed.pages.dev/circle.json
 ```
 
-> 重要：请在 Pages 项目设置里把 **Branch Preview 设为 None**（或只勾生产分支）。
+> ⚠️ 请在 Pages 设置里把 **Branch Preview 设为 None**（或只勾生产分支）。
 > 否则每次推送都可能触发构建，白白消耗每月 500 次的免费额度。
 
 ## 自定义
@@ -53,13 +60,11 @@ https://circle-feed.pages.dev/circle.json
 
 | 配置 | 说明 |
 |---|---|
-| `FRIENDS_CONFIG_URLS` | 主仓库友链配置文件地址，按顺序尝试 |
 | `EXTRA_SOURCES` | 额外订阅源，适合收录没加进友链的站点 |
-| `FETCH_OPTIONS.timeout` | 单个订阅源超时（毫秒） |
-| `FETCH_OPTIONS.limitPerSource` | 每个站点最多取几篇 |
-| `FETCH_OPTIONS.totalLimit` | 总共最多展示几篇 |
-| `CACHE_MAX_AGE` | 边缘缓存秒数，调小更新更及时 |
-| `CORS_ORIGIN` | 允许读取的来源，`*` 或限定成自己的域名 |
+| `FRIENDS_CONFIG_URLS` | 主仓库友链配置文件地址，按顺序尝试 |
+| `FETCH_OPTIONS` | 超时、每站条数、总数上限（改这里需同步改脚本内常量） |
+
+抓取频率在 `.github/workflows/update.yml` 的 `cron` 里改，默认每 6 小时一次。
 
 ## 返回格式
 
@@ -96,10 +101,11 @@ https://circle-feed.pages.dev/circle.json
 ## 本地调试
 
 ```bash
-pnpm install
-pnpm dev
-# 打开 http://localhost:8788/circle.json
+node scripts/fetch-circle.mjs
+cat public/circle.json
 ```
+
+脚本为零依赖纯 Node 实现，不需要 `npm install`，Node 18+ 即可运行。
 
 ## 许可
 

@@ -1,0 +1,63 @@
+name: Update Circle Data
+
+# 定时抓取朋友们的 RSS，生成 circle.json 并提交回仓库
+# Cloudflare Pages 检测到仓库变更后会自动部署，因此不需要任何 API Token
+on:
+  schedule:
+    # UTC 每 6 小时的第 23 分钟
+    # 对应北京时间 02:23 / 08:23 / 14:23 / 20:23
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      # 配置或脚本变动时立即刷新一次
+      - 'src/config.ts'
+      - 'scripts/fetch-circle.mjs'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: circle-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 脚本为零依赖纯 Node 实现，无需安装任何包
+      - name: Fetch feeds
+        run: node scripts/fetch-circle.mjs
+        env:
+          TZ: Asia/Shanghai
+
+      - name: Show summary
+        run: |
+          echo "订阅源：$(node -p "require('./public/circle.json').sourceCount")"
+          echo "文章数：$(node -p "require('./public/circle.json').items.length")"
+          echo "失败数：$(node -p "require('./public/circle.json').failures.length")"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add public/circle.json
+
+          # 内容无变化时跳过提交，避免产生空提交、也避免触发无谓的部署
+          if git diff --cached --quiet; then
+            echo "数据无变化，跳过提交"
+            exit 0
+          fi
+
+          git commit -m "chore: 更新圈子数据 $(date '+%Y-%m-%d %H:%M')"
+          git push origin main

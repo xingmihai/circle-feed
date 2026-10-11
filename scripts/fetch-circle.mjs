@@ -1,0 +1,385 @@
+#!/usr/bin/env node
+// 圈子数据抓取脚本
+//
+// 纯 Node 实现，零依赖，由 GitHub Actions 定时执行
+// 从主仓库的友链配置读取订阅源，抓取 RSS / Atom，生成 public/circle.json
+//
+// 用法：node scripts/fetch-circle.mjs
+
+import { readFileSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const OUTPUT = resolve(ROOT, "public/circle.json");
+
+const UA =
+	"Mozilla/5.0 (compatible; CircleFeed/1.0; +https://github.com/xingmihai/circle-feed)";
+
+// 常见的订阅源路径，用于自动探测
+const COMMON_FEED_PATHS = [
+	"/rss.xml",
+	"/atom.xml",
+	"/feed",
+	"/feed.xml",
+	"/index.xml",
+	"/rss/",
+	"/feed/rss.xml",
+];
+
+// 主仓库友链配置文件地址，按顺序尝试
+const FRIENDS_CONFIG_URLS = [
+	// raw 无缓存，改友链后立即生效
+	"https://raw.githubusercontent.com/xingmihai/XMHAI/master/src/config/friendsConfig.ts",
+	// 备用：jsDelivr CDN
+	"https://cdn.jsdelivr.net/gh/xingmihai/XMHAI@master/src/config/friendsConfig.ts",
+];
+
+// ---------------------------------------------------------------- 配置解析
+
+// 去掉整行注释，避免被注释掉的示例配置被当成真实订阅源
+function stripCommentLines(source) {
+	return source
+		.split("\n")
+		.filter((line) => !/^\s*\/\//.test(line))
+		.join("\n");
+}
+
+// 截取 `export const friendsConfig = [...]` 数组内部的内容
+// 用 `[=:] [` 定位数组起点，避开 `FriendLink[]` 这类类型注解里的方括号
+function sliceArrayBody(source, anchor) {
+	const start = source.indexOf(anchor);
+	if (start < 0) return "";
+	const matched = /[=:]\s*\[/.exec(source.slice(start));
+	if (!matched) return "";
+	const open = start + matched.index + matched[0].length - 1;
+
+	let depth = 0;
+	for (let i = open; i < source.length; i++) {
+		const ch = source[i];
+		if (ch === "[") depth++;
+		else if (ch === "]") {
+			depth--;
+			if (depth === 0) return source.slice(open + 1, i);
+		}
+	}
+	return "";
+}
+
+// 按顶层大括号切分对象块
+function splitObjects(body) {
+	const blocks = [];
+	let depth = 0;
+	let start = -1;
+	for (let i = 0; i < body.length; i++) {
+		const ch = body[i];
+		if (ch === "{") {
+			if (depth === 0) start = i;
+			depth++;
+		} else if (ch === "}") {
+			depth--;
+			if (depth === 0 && start >= 0) {
+				blocks.push(body.slice(start, i + 1));
+				start = -1;
+			}
+		}
+	}
+	return blocks;
+}
+
+function pickField(block, key) {
+	const matched = new RegExp(`${key}\\s*:\\s*"([^"]*)"`, "i").exec(block);
+	return matched ? matched[1] : undefined;
+}
+
+function pickBoolean(block, key, fallback = true) {
+	const matched = new RegExp(`${key}\\s*:\\s*(true|false)`, "i").exec(block);
+	return matched ? matched[1] === "true" : fallback;
+}
+
+// 读取本地额外订阅源配置（src/config.ts 中的 EXTRA_SOURCES）
+function readExtraSources() {
+	let source;
+	try {
+		source = stripCommentLines(readFileSync(resolve(ROOT, "src/config.ts"), "utf-8"));
+	} catch {
+		return [];
+	}
+	const body = sliceArrayBody(source, "export const EXTRA_SOURCES");
+	return splitObjects(body)
+		.filter((block) => pickBoolean(block, "enabled", true))
+		.map((block) => ({
+			name: pickField(block, "name") || "",
+			site: pickField(block, "site") || "",
+			avatar: pickField(block, "avatar") || undefined,
+			feed: pickField(block, "feed") || undefined,
+		}))
+		.filter((item) => item.name && item.site);
+}
+
+// 从主仓库拉取友链配置并解析
+async function loadFriendSources(timeout) {
+	for (const url of FRIENDS_CONFIG_URLS) {
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), timeout);
+		try {
+			const res = await fetch(url, {
+				signal: controller.signal,
+				headers: { "User-Agent": UA },
+			});
+			if (!res.ok) continue;
+			const text = await res.text();
+			const body = sliceArrayBody(stripCommentLines(text), "export const friendsConfig");
+			const sources = splitObjects(body)
+				.filter((block) => pickBoolean(block, "enabled", true))
+				.map((block) => ({
+					name: pickField(block, "title") || "",
+					site: pickField(block, "siteurl") || "",
+					avatar: pickField(block, "imgurl") || undefined,
+					feed: pickField(block, "rss") || undefined,
+				}))
+				.filter((item) => item.name && item.site);
+			if (sources.length > 0) return { sources, url };
+		} catch {
+			// 换下一个地址继续尝试
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+	return { sources: [], error: "未能读取主仓库的友链配置" };
+}
+
+// ---------------------------------------------------------------- 解析
+
+function pickTag(xml, tag) {
+	const cdata = new RegExp(
+		`<${tag}[^>]*>\\s*<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>\\s*</${tag}>`,
+		"i",
+	).exec(xml);
+	if (cdata) return cdata[1].trim();
+	const plain = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i").exec(xml);
+	return plain ? plain[1].trim() : "";
+}
+
+function pickLink(xml, isAtom) {
+	if (isAtom) {
+		const alternate =
+			/<link[^>]*rel=["']alternate["'][^>]*href=["']([^"']+)["']/i.exec(xml);
+		if (alternate) return alternate[1].trim();
+		const anyHref = /<link[^>]*href=["']([^"']+)["']/i.exec(xml);
+		return anyHref ? anyHref[1].trim() : "";
+	}
+	return pickTag(xml, "link");
+}
+
+function decodeEntities(text) {
+	return text
+		.replace(/&lt;/g, "<")
+		.replace(/&gt;/g, ">")
+		.replace(/&quot;/g, '"')
+		.replace(/&#39;|&apos;/g, "'")
+		.replace(/&nbsp;/g, " ")
+		.replace(/&amp;/g, "&");
+}
+
+function normalizeText(text) {
+	return decodeEntities(text.replace(/<[^>]+>/g, ""))
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
+function parseTimestamp(raw) {
+	if (!raw) return 0;
+	const ts = Date.parse(raw);
+	return Number.isNaN(ts) ? 0 : ts;
+}
+
+// 解析 RSS 2.0 / Atom
+function parseFeed(xml) {
+	if (!xml) return [];
+	const isAtom = /<feed[\s>]/i.test(xml) && !/<rss[\s>]/i.test(xml);
+	const tagName = isAtom ? "entry" : "item";
+	const blocks =
+		xml.match(new RegExp(`<${tagName}[\\s>][\\s\\S]*?</${tagName}>`, "gi")) || [];
+
+	const items = [];
+	for (const block of blocks) {
+		const title = normalizeText(pickTag(block, "title"));
+		const link = pickLink(block, isAtom);
+		if (!title || !link) continue;
+		const published =
+			pickTag(block, "pubDate") ||
+			pickTag(block, "published") ||
+			pickTag(block, "updated") ||
+			pickTag(block, "dc:date");
+		items.push({ title, link, published, timestamp: parseTimestamp(published) });
+	}
+	return items;
+}
+
+// ---------------------------------------------------------------- 抓取
+
+async function fetchText(url, timeout) {
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), timeout);
+	try {
+		const res = await fetch(url, {
+			signal: controller.signal,
+			headers: {
+				"User-Agent": UA,
+				Accept:
+					"application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
+			},
+		});
+		if (!res.ok) return { text: "", error: `HTTP ${res.status}` };
+		return { text: await res.text() };
+	} catch (err) {
+		const reason =
+			err instanceof Error
+				? err.name === "AbortError"
+					? "抓取超时"
+					: err.message
+				: "抓取失败";
+		return { text: "", error: reason };
+	} finally {
+		clearTimeout(timer);
+	}
+}
+
+// 自动探测站点常见的订阅源路径
+async function discoverFeed(site, timeout) {
+	const base = site.replace(/\/+$/, "");
+	for (const path of COMMON_FEED_PATHS) {
+		const url = base + path;
+		const { text, error } = await fetchText(url, timeout);
+		if (error) continue;
+		if (!/<rss[\s>]/i.test(text) && !/<feed[\s>]/i.test(text)) continue;
+		if (parseFeed(text).length > 0) return url;
+	}
+	return null;
+}
+
+// 抓取单个订阅源：优先用配置地址，失败再自动探测
+async function fetchSource(source, timeout, limit) {
+	const candidates = source.feed ? [source.feed] : [];
+	let lastError = source.feed ? "抓取失败" : "未配置订阅源地址";
+
+	for (const url of candidates) {
+		const { text, error } = await fetchText(url, timeout);
+		if (error) {
+			lastError = error;
+			continue;
+		}
+		const parsed = parseFeed(text);
+		if (parsed.length > 0) {
+			return { items: parsed.slice(0, limit), feedUrl: url, error: undefined };
+		}
+		lastError = "未解析到文章";
+	}
+
+	const discovered = await discoverFeed(source.site, Math.min(timeout, 5000));
+	if (discovered) {
+		const { text, error } = await fetchText(discovered, timeout);
+		if (!error) {
+			const parsed = parseFeed(text);
+			if (parsed.length > 0) {
+				return { items: parsed.slice(0, limit), feedUrl: discovered, error: undefined };
+			}
+		}
+		return { items: [], feedUrl: undefined, error: "已找到订阅源但解析不出文章" };
+	}
+
+	return {
+		items: [],
+		feedUrl: undefined,
+		error: source.feed ? lastError : "未探测到订阅源（可手动填写 feed 地址）",
+	};
+}
+
+// ---------------------------------------------------------------- 主流程
+
+async function main() {
+	const timeout = 10000;
+	const limitPerSource = 5;
+	const totalLimit = 40;
+
+	const extraSources = readExtraSources();
+	const { sources: friendSources, error: configError } =
+		await loadFriendSources(timeout);
+
+	if (configError) {
+		console.error(`[circle] 警告：${configError}`);
+	}
+
+	// 合并去重，额外配置优先
+	const merged = [];
+	for (const source of friendSources) {
+		if (!extraSources.some((s) => s.name === source.name)) merged.push(source);
+	}
+	merged.push(...extraSources);
+
+	console.error(`[circle] 共 ${merged.length} 个订阅源，开始抓取…`);
+
+	const results = await Promise.all(
+		merged.map(async (source) => {
+			const result = await fetchSource(source, timeout, limitPerSource);
+			console.error(
+				result.error
+					? `[circle] ✗ ${source.name} — ${result.error}`
+					: `[circle] ✓ ${source.name} — ${result.items.length} 篇`,
+			);
+			return { source, ...result };
+		}),
+	);
+
+	const items = [];
+	const failures = [];
+	const sources = [];
+
+	for (const result of results) {
+		if (result.error) {
+			failures.push({ name: result.source.name, error: result.error });
+		} else {
+			for (const item of result.items) {
+				items.push({
+					title: item.title,
+					link: item.link,
+					published: item.published,
+					timestamp: item.timestamp,
+					sourceName: result.source.name,
+					sourceAvatar: result.source.avatar,
+					sourceSite: result.source.site,
+				});
+			}
+		}
+		sources.push({
+			name: result.source.name,
+			site: result.source.site,
+			avatar: result.source.avatar,
+			feedUrl: result.feedUrl,
+			ok: !result.error,
+		});
+	}
+
+	items.sort((a, b) => b.timestamp - a.timestamp);
+
+	const payload = {
+		updatedAt: new Date().toISOString(),
+		sourceCount: sources.length,
+		sources,
+		items: items.slice(0, totalLimit),
+		failures,
+	};
+
+	writeFileSync(OUTPUT, `${JSON.stringify(payload, null, 2)}\n`, "utf-8");
+
+	console.error(
+		`[circle] 完成：${payload.items.length} 篇文章，${failures.length} 个站点失败`,
+	);
+	console.error(`[circle] 已写入 ${OUTPUT}`);
+}
+
+main().catch((error) => {
+	console.error("[circle] 执行失败:", error);
+	process.exit(1);
+});

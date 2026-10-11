@@ -1,20 +1,14 @@
-import type { FeedSource } from "./rss";
-
 // 圈子数据源配置
-
-// ── 订阅来源：自动从主仓库的友链配置拉取 ────────────────────────────
-// 主仓库中友链配置文件的位置，按顺序尝试，取第一个成功的
-export const FRIENDS_CONFIG_URLS = [
-	// raw 无缓存，改友链后立即生效
-	"https://raw.githubusercontent.com/xingmihai/XMHAI/master/src/config/friendsConfig.ts",
-	// 备用：jsDelivr CDN（有约 12 小时缓存）
-	"https://cdn.jsdelivr.net/gh/xingmihai/XMHAI@master/src/config/friendsConfig.ts",
-];
+//
+// 说明：本文件会被 scripts/fetch-circle.mjs 以文本方式解析，
+// 因此请保持 `export const EXTRA_SOURCES = [...]` 的写法与字段格式，
+// 注释以 // 开头（整行注释会被自动忽略）
 
 // ── 额外订阅源 ──────────────────────────────────────────────────
-// 想订阅没在友链里的博客，写在这里即可
-// feed 留空会自动探测 /rss.xml、/feed 等常见路径
-export const EXTRA_SOURCES: FeedSource[] = [
+// 主仓库 XMHAI 的友链会自动作为订阅源，无需在这里重复添加
+// 这里只填想订阅、但没加进友链的站点
+// feed 留空会自动探测 /rss.xml、/feed、/atom.xml 等常见路径
+export const EXTRA_SOURCES = [
 	// {
 	//   name: "示例博客",
 	//   site: "https://example.com",
@@ -24,21 +18,16 @@ export const EXTRA_SOURCES: FeedSource[] = [
 ];
 
 // ── 抓取参数 ────────────────────────────────────────────────────
+// 以下数值如需调整，请同步修改 scripts/fetch-circle.mjs 中 main() 里的常量
 export const FETCH_OPTIONS = {
-	// 单个订阅源的抓取超时（毫秒）
-	timeout: 10000,
-	// 每个订阅源最多取多少篇
-	limitPerSource: 5,
-	// 总共最多展示多少篇
-	totalLimit: 40,
+	timeout: 10000, // 单个订阅源抓取超时（毫秒）
+	limitPerSource: 5, // 每个站点最多取几篇
+	totalLimit: 40, // 总共最多展示几篇
 };
 
-// ── 缓存 ────────────────────────────────────────────────────────
-// 边缘缓存时间（秒）：这段时间内重复访问直接返回缓存，不会重复抓取
-// 调小 → 更新更及时，但对友链站点请求更频繁
-export const CACHE_MAX_AGE = 3600; // 1 小时
-
-// ── CORS ────────────────────────────────────────────────────────
-// 允许读取本接口的来源。* 表示任意站点都能读
-// 若只允许自己的博客，改成 "https://www.5al.top"
-export const CORS_ORIGIN = "*";
+// ── 主仓库友链配置地址 ───────────────────────────────────────────
+// 按顺序尝试，取第一个成功的。改友链后这里会自动同步
+export const FRIENDS_CONFIG_URLS = [
+	"https://raw.githubusercontent.com/xingmihai/XMHAI/master/src/config/friendsConfig.ts",
+	"https://cdn.jsdelivr.net/gh/xingmihai/XMHAI@master/src/config/friendsConfig.ts",
+];

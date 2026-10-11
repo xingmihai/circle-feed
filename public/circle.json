@@ -1,0 +1,69 @@
+{
+  "updatedAt": "2026-10-11T00:52:03.180Z",
+  "sourceCount": 6,
+  "sources": [
+    {
+      "name": "笑的博客",
+      "site": "https://blog.xiaow.qzz.io",
+      "avatar": "https://q1.qlogo.cn/g?b=qq&nk=548541786&s=100",
+      "ok": false
+    },
+    {
+      "name": "韩小韩博客",
+      "site": "https://www.vvhan.com",
+      "avatar": "https://q1.qlogo.cn/g?b=qq&nk=1655466387&s=100",
+      "ok": false
+    },
+    {
+      "name": "萌国萌站广场",
+      "site": "https://icp.gov.moe/aboutus.php",
+      "avatar": "https://icp.gov.moe/favicon.ico",
+      "ok": false
+    },
+    {
+      "name": "WebTeleporter",
+      "site": "https://webteleporter.top/",
+      "avatar": "https://webteleporter.top/favicon.ico",
+      "ok": false
+    },
+    {
+      "name": "BlogsClub",
+      "site": "https://www.blogsclub.org/",
+      "avatar": "https://www.blogsclub.org/usr/themes/default/favicon.png",
+      "ok": false
+    },
+    {
+      "name": "博友圈",
+      "site": "https://www.boyouquan.com/",
+      "avatar": "https://www.boyouquan.com/assets/favicon.ico",
+      "ok": false
+    }
+  ],
+  "items": [],
+  "failures": [
+    {
+      "name": "笑的博客",
+      "error": "未探测到订阅源（可手动填写 feed 地址）"
+    },
+    {
+      "name": "韩小韩博客",
+      "error": "未探测到订阅源（可手动填写 feed 地址）"
+    },
+    {
+      "name": "萌国萌站广场",
+      "error": "未探测到订阅源（可手动填写 feed 地址）"
+    },
+    {
+      "name": "WebTeleporter",
+      "error": "未探测到订阅源（可手动填写 feed 地址）"
+    },
+    {
+      "name": "BlogsClub",
+      "error": "未探测到订阅源（可手动填写 feed 地址）"
+    },
+    {
+      "name": "博友圈",
+      "error": "未探测到订阅源（可手动填写 feed 地址）"
+    }
+  ]
+}
