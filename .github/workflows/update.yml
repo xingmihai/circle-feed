@@ -26,13 +26,14 @@ concurrency:
 
 jobs:
   update:
-    runs-on: ubuntu-latest
+    # 固定镜像版本，避开 ubuntu-latest 迁移到 Ubuntu 26.04 的变更窗口
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -43,7 +44,7 @@ jobs:
           git reset --hard origin/main
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
 
@@ -89,16 +90,16 @@ jobs:
           exit 1
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       # 只上传 public/ 目录，其中 CNAME 文件用于保留自定义域名
       # 注意：Settings 里填域名生成的 CNAME 在仓库根目录，不会进入部署产物，
       #       因此必须放在 public/ 下，否则每次部署后自定义域名会失效
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: public
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
